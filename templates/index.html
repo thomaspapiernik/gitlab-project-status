@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitLab Project Status</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        .status-tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+
+        .status-tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%; /* Top */
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .status-tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%; /* At the bottom of the tooltip */
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #555 transparent transparent transparent;
+        }
+
+        .status-tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        td a {
+            text-decoration: none;
+        }
+
+        input[type="number"] {
+            width: 75px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">GitLab Project Status</h1>
+
+        <form action="/" method="get" class="mb-3">
+            <div class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <label for="search_query" class="col-form-label">Search Project:</label>
+                </div>
+                <div class="col-auto">
+                    <input type="text" id="search_query" name="search_query" class="form-control" value="{{ search_query if search_query is not none else '' }}">
+                </div>
+                <div class="col-auto">
+                    <label for="min_feature_branches" class="col-form-label">Min Feature Branches:</label>
+                </div>
+                <div class="col-auto">
+                    <input type="number" id="min_feature_branches" name="min_feature_branches" class="form-control" value="{{ min_feature_branches if min_feature_branches is not none else '' }}">
+                </div>
+                <div class="col-auto">
+                    <label for="max_open_mrs" class="col-form-label">Max Open MRs:</label>
+                </div>
+                <div class="col-auto">
+                    <input type="number" id="max_open_mrs" name="max_open_mrs" class="form-control" value="{{ max_open_mrs if max_open_mrs is not none else '' }}">
+                </div>
+                <div class="col-auto">
+                    <label for="main_sync_status" class="col-form-label">Main Synced:</label>
+                </div>
+                <div class="col-auto">
+                    <select id="main_sync_status" name="main_sync_status" class="form-select">
+                        <option value="">All</option>
+                        <option value="synced" {% if main_sync_status == 'synced' %}selected{% endif %}>✅ Synced</option>
+                        <option value="not_synced" {% if main_sync_status == 'not_synced' %}selected{% endif %}>❌ Not Synced</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                </div>
+            </div>
+        </form>
+        <form action="/clear_selected_cache" method="post" class="mb-3">
+            <button type="submit" class="btn btn-danger">Clear Selected Cache</button>
+
+            <table class="table table-striped mt-3">
+                <thead>
+                    <tr>
+                        <th scope="col"></th> <!-- Checkbox column -->
+                        <th scope="col">Project</th>
+                        <th scope="col">Feature Branches</th>
+                        <th scope="col">Total Branches</th>
+                        <th scope="col">Open MRs</th>
+                        <th scope="col">Main Synced to Develop</th>
+                        {% for branch in all_branches %}
+                        <th scope="col">{{ branch }}</th>
+                        {% endfor %}
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project_name, project_data in projects.items() %}
+                    <tr>
+                        <td><input type="checkbox" name="selected_projects" value="{{ project_name }}"></td>
+                        {% if project_data.status == 'Project Not Found' %}
+                        <td>
+                            <div class="status-tooltip">
+                                {{ project_data.short_name }}
+                                <span class="tooltiptext">{{ project_name }}</span>
+                            </div>
+                        </td>
+                        <td colspan="5">Project Not Found</td>
+                        <td></td> <!-- Empty cell for actions -->
+                        {% else %}
+                        <td>
+                            <div class="status-tooltip">
+                                {{ project_data.short_name }}
+                                <span class="tooltiptext">{{ project_name }}</span>
+                            </div>
+                        </td>
+                        <td>{{ project_data.total_feature_branch_count }}</td>
+                        <td>{{ project_data.total_branch_count }}</td>
+                        <td>{{ project_data.open_mr_count }}</td>
+                        <td><a href="{{ project_data.project_web_url }}" target="_blank">{{ project_data.main_synced_to_develop }}</a></td>
+                        {% for branch in all_branches %}
+                        <td>
+                            {% if branch in project_data.branches %}
+                                <div class="status-tooltip">
+                                    {{ project_data.branches[branch].status }}
+                                    <span class="tooltiptext">
+                                        Pipeline: {{ project_data.branches[branch].pipeline_date }}<br>
+                                        Commit: {{ project_data.branches[branch].commit_date }}
+                                    </span>
+                                </div>
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td><a href="{{ url_for('clear_project_cache', project_name=project_name) }}" class="btn btn-sm btn-warning">Clear Cache</a></td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+[project]
+name = "gitlab-project-status"
+version = "0.1.0"
+description = "This project displays the status of projects from GitLab."
+readme = "README.md"
+requires-python = ">=3.8"
+
+dependencies = [
+    "python-gitlab",
+    "python-dotenv",
+    "Flask",
+    "python-dateutil",
+    "pytz",
+    "Flask-Caching",
+]
