@@ -95,7 +95,7 @@
                     <a href="{{ url_for('add_project_route') }}" class="btn btn-success me-2" title="Add New Project">
                         <svg data-testid="plus-icon" role="img" aria-hidden="true" class="gl-button-icon gl-icon s16" style="width: 16px; height: 16px; fill: currentColor; vertical-align: middle;"><use href="/assets/icons.svg#plus"></use></svg>
                     </a>
-                    <form action="/clear_selected_cache" method="post" class="d-inline">
+                    <form action="/clear_selected_cache" method="post" class="d-inline" id="clear_selected_cache_form">
                         <button type="submit" class="btn btn-danger" title="Clear Selected Cache">
                             <svg data-testid="clear-icon" role="img" aria-hidden="true" class="gl-button-icon gl-icon s16" style="width: 16px; height: 16px; fill: currentColor; vertical-align: middle;"><use href="/assets/icons.svg#clear"></use></svg>
                         </button>
