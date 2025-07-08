@@ -3,4 +3,5 @@ __pycache__/
 
 .env
 projects.json
+.projects.db
 cache
