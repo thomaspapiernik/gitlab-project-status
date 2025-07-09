@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, request, send_from_directory
+from flask import Flask, render_template, redirect, url_for, request, send_from_directory, jsonify
 import os
 from dotenv import load_dotenv
 
@@ -73,6 +73,46 @@ def clear_selected_cache():
 @app.route('/assets/<path:filename>')
 def serve_assets(filename):
     return send_from_directory('assets', filename)
+
+@app.route('/refresh_projects')
+def refresh_projects():
+    search_query = request.args.get('search_query', '')
+    min_feature_branches = request.args.get('min_feature_branches', type=int)
+    max_open_mrs = request.args.get('max_open_mrs', type=int)
+    main_sync_status = request.args.get('main_sync_status', '')
+    sort_by = request.args.get('sort_by', 'name')
+    sort_order = request.args.get('sort_order', 'asc')
+
+    projects_from_db = db_manager.get_all_projects()
+    groups_from_db = db_manager.get_all_groups()
+
+    all_project_names = {p['name'] for p in projects_from_db}
+    for group_id in groups_from_db:
+        projects_in_group = gitlab_service.get_projects_from_group(group_id)
+        for project_name in projects_in_group:
+            all_project_names.add(project_name)
+
+    projects_data = []
+    for project_name in all_project_names:
+        # Find original project data to get branches, if it exists
+        original_project = next((p for p in projects_from_db if p['name'] == project_name), None)
+        branches = original_project['branches'] if original_project else gitlab_service.get_default_branches()
+        projects_data.append({'name': project_name, 'branches': branches})
+
+    grouped_projects = {}
+    default_branches = gitlab_service.get_default_branches()
+
+    for project_data in projects_data:
+        full_project_name = project_data['name']
+        branches_to_process = project_data.get('branches', default_branches)
+        project_entry = gitlab_service.get_project_data(full_project_name, branches_to_process)
+        grouped_projects[full_project_name] = project_entry
+
+    filtered_projects, all_branches = data_processor.filter_and_sort_projects(
+        grouped_projects, search_query, min_feature_branches, max_open_mrs, main_sync_status, sort_by, sort_order, projects_data, default_branches
+    )
+
+    return jsonify(projects=filtered_projects, all_branches=all_branches)
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000)

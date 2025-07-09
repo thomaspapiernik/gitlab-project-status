@@ -73,6 +73,8 @@ def get_project_data(full_project_name, branches_to_process):
                 except (IndexError, ValueError):
                     pass
 
+                pipeline_status = pipeline.status if pipeline else '--'
+
                 if pipeline_date:
                     pipeline_date = pipeline_date.astimezone(pytz.timezone('Europe/Paris'))
                 if commit_date:
@@ -85,7 +87,8 @@ def get_project_data(full_project_name, branches_to_process):
                 project_entry['branches'][branch] = {
                     'status': status,
                     'pipeline_date': pipeline_date.strftime('%Y-%m-%d %H:%M:%S') if pipeline_date else 'No pipeline found',
-                    'commit_date': commit_date.strftime('%Y-%m-%d %H:%M:%S') if commit_date else 'No commit found'
+                    'commit_date': commit_date.strftime('%Y-%m-%d %H:%M:%S') if commit_date else 'No commit found',
+                    'pipeline_status': pipeline_status if pipeline_status else 'No pipeline found'
                 }
             cache.set(full_project_name, project_entry, timeout=600)
         except GitlabGetError as e:
