@@ -78,7 +78,7 @@ def get_project_data(full_project_name, branches_to_process):
                 if commit_date:
                     commit_date = commit_date.astimezone(pytz.timezone('Europe/Paris'))
 
-                if pipeline_date and commit_date:
+                if pipeline_date and commit_date and pipeline_status == 'success':
                     if pipeline_date >= commit_date:
                         status = '✅'
 
