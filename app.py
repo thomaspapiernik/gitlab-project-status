@@ -9,6 +9,7 @@ import data_processor
 load_dotenv()
 
 app = Flask(__name__)
+app.debug = os.environ.get('FLASK_DEBUG') == '1'
 
 # Initialize GitLab service with app instance for caching
 gitlab_service.init_gitlab_service(app, os.environ.get("GITLAB_URL", "https://gitlab.com"), os.environ.get("GITLAB_PRIVATE_TOKEN"))
@@ -115,4 +116,4 @@ def refresh_projects():
     return jsonify(projects=filtered_projects, all_branches=all_branches)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8000)
+    app.run(port=8000)
